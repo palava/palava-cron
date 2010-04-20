@@ -35,7 +35,7 @@ public final class SimpleCronModule extends CronModule {
     protected void configure() {
         schedule(Runnable.class).using("");
         schedule(Key.get(Runnable.class)).using(Names.named("my.cronExpression"));
-        schedule(TypeLiteral.get(Runnable.class)).annotatedWith(Deprecated.class).using("");
+        schedule(TypeLiteral.get(Runnable.class)).annotatedWith(Deprecated.class).using(Override.class);
     }
 
 }

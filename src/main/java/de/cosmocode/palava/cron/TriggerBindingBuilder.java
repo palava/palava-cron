@@ -22,14 +22,12 @@ package de.cosmocode.palava.cron;
 
 import java.lang.annotation.Annotation;
 
-import com.google.inject.Key;
-
 public interface TriggerBindingBuilder {
 
     void using(String expression);
     
     void using(Annotation annotation);
     
-    void using(Key<? extends String> key);
+    void using(Class<? extends Annotation> annotationType);
     
 }

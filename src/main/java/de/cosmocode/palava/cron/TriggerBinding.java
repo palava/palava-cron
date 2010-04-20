@@ -20,9 +20,61 @@
 
 package de.cosmocode.palava.cron;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.common.base.Preconditions;
+import com.google.inject.Key;
+import com.google.inject.Provider;
 
-public interface TriggerBinding {
+/**
+ * 
+ *
+ * @author Willi Schoenborn
+ */
+interface TriggerBinding {
 
+    Runnable getRunnable();
+    
+    String getExpression();
+    
+    public static final class Builder {
+        
+        private final Provider<? extends Runnable> runnable;
+
+        public Builder(Provider<? extends Runnable> runnable) {
+            this.runnable = Preconditions.checkNotNull(runnable, "Runnable");
+        }
+
+        public TriggerBinding withExpression(final String expression) {
+            return new TriggerBinding() {
+                
+                @Override
+                public Runnable getRunnable() {
+                    return runnable.get();
+                }
+                
+                @Override
+                public String getExpression() {
+                    return expression;
+                }
+                
+            };
+        }
+        
+        public TriggerBinding withExpression(final Provider<? extends String> expression) {
+            return new TriggerBinding() {
+                
+                @Override
+                public Runnable getRunnable() {
+                    return runnable.get();
+                }
+                
+                @Override
+                public String getExpression() {
+                    return expression.get();
+                }
+                
+            };
+        }
+        
+    }
+    
 }

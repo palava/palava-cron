@@ -22,6 +22,7 @@ package de.cosmocode.palava.cron;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.multibindings.Multibinder;
 
 /**
  * Binds the {@link CronManager} as eager singleton.
@@ -32,6 +33,7 @@ public final class CronManagerModule implements Module {
 
     @Override
     public void configure(Binder binder) {
+        Multibinder.newSetBinder(binder, TriggerBinding.class);
         binder.bind(CronManager.class).asEagerSingleton();
     }
 
