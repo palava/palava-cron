@@ -36,40 +36,63 @@ import com.google.inject.multibindings.Multibinder;
  */
 public abstract class CronModule extends AbstractModule {
 
+    /**
+     * First step of the scheduling binding expression.
+     * 
+     * @param type the binding target which should be scheduled
+     * @return a binding builder used to configure the cron expression
+     */
     protected final AnnotatedTriggerBindingBuilder schedule(Class<? extends Runnable> type) {
-        return schedule(Key.get(type));
+        return new InternalBuilder(Key.get(type));
     }
-    
+
+    /**
+     * First step of the scheduling binding expression.
+     * 
+     * @param literal the binding target which should be scheduled
+     * @return a binding builder used to configure the cron expression
+     */
     protected final AnnotatedTriggerBindingBuilder schedule(TypeLiteral<? extends Runnable> literal) {
-        return schedule(Key.get(literal));
+        return new InternalBuilder(Key.get(literal));
     }
-    
-    protected final AnnotatedTriggerBindingBuilder schedule(Key<? extends Runnable> key) {
+
+    /**
+     * First step of the scheduling binding expression.
+     * 
+     * @param key the binding target which should be scheduled
+     * @return a binding builder used to configure the cron expression
+     */
+    protected final TriggerBindingBuilder schedule(Key<? extends Runnable> key) {
         return new InternalBuilder(key);
     }
     
+    /**
+     * Internal implementation of the {@link AnnotatedTriggerBindingBuilder} interface.
+     *
+     * @author Willi Schoenborn
+     */
     private final class InternalBuilder implements AnnotatedTriggerBindingBuilder {
         
-        private final Key<? extends Runnable> key;
+        private final Key<? extends Runnable> commandKey;
 
-        public InternalBuilder(Key<? extends Runnable> key) {
-            this.key = Preconditions.checkNotNull(key, "Key");
+        public InternalBuilder(Key<? extends Runnable> commandKey) {
+            this.commandKey = Preconditions.checkNotNull(commandKey, "CommandKey");
         }
         
         @Override
         public TriggerBindingBuilder annotatedWith(Annotation annotation) {
-            return schedule(Key.get(key.getTypeLiteral(), annotation));
+            return schedule(Key.get(commandKey.getTypeLiteral(), annotation));
         }
         
         @Override
         public TriggerBindingBuilder annotatedWith(Class<? extends Annotation> annotationType) {
-            return schedule(Key.get(key.getTypeLiteral(), annotationType));
+            return schedule(Key.get(commandKey.getTypeLiteral(), annotationType));
         }
         
         @Override
         public void using(String expression) {
-            final Provider<? extends Runnable> provider = binder().getProvider(key);
-            final TriggerBinding binding = new TriggerBinding.Builder(provider).withExpression(expression);
+            final Provider<? extends Runnable> provider = binder().getProvider(commandKey);
+            final TriggerBinding binding = TriggerBindings.of(provider, expression);
             bind(binding);
         }
         
@@ -84,9 +107,9 @@ public abstract class CronModule extends AbstractModule {
         }
         
         private void using(Key<? extends String> expressionKey) {
-            final Provider<? extends Runnable> provider = binder().getProvider(key);
-            final Provider<? extends String> expressionProvider = binder().getProvider(expressionKey);
-            final TriggerBinding binding = new TriggerBinding.Builder(provider).withExpression(expressionProvider);
+            final Provider<? extends Runnable> command = binder().getProvider(commandKey);
+            final Provider<? extends String> expression = binder().getProvider(expressionKey);
+            final TriggerBinding binding = TriggerBindings.of(command, expression);
             bind(binding);
         }
         

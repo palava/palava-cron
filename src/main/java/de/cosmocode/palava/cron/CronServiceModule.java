@@ -25,16 +25,16 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 
 /**
- * Binds the {@link CronManager} as eager singleton.
+ * Binds the {@link CronService} as eager singleton.
  *
  * @author Willi Schoenborn
  */
-public final class CronManagerModule implements Module {
+public final class CronServiceModule implements Module {
 
     @Override
     public void configure(Binder binder) {
         Multibinder.newSetBinder(binder, TriggerBinding.class);
-        binder.bind(CronManager.class).asEagerSingleton();
+        binder.bind(CronService.class).asEagerSingleton();
     }
 
 }

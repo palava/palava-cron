@@ -37,20 +37,21 @@ import de.cosmocode.palava.core.lifecycle.Initializable;
 import de.cosmocode.palava.core.lifecycle.LifecycleException;
 
 /**
- * 
+ * A {@link Initializable} service which schedules all
+ * configured triggers on application startup.
  *
  * @author Willi Schoenborn
  */
-final class CronManager implements Initializable {
+final class CronService implements Initializable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CronManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CronService.class);
 
     private final ScheduledExecutorService scheduler;
     
     private final Set<TriggerBinding> bindings;
     
     @Inject
-    public CronManager(@Cron ScheduledExecutorService scheduler, Set<TriggerBinding> bindings) {
+    public CronService(@Cron ScheduledExecutorService scheduler, Set<TriggerBinding> bindings) {
         this.scheduler = Preconditions.checkNotNull(scheduler, "Scheduler");
         this.bindings = Preconditions.checkNotNull(bindings, "Bindings");
     }
@@ -60,7 +61,7 @@ final class CronManager implements Initializable {
         LOG.info("Scheduling {} tasks", bindings.size());
         
         for (TriggerBinding binding : bindings) {
-            final Runnable runnable = binding.getRunnable();
+            final Runnable runnable = binding.getCommand();
             final String expression = binding.getExpression();
             final CronExpression cronExpression;
             

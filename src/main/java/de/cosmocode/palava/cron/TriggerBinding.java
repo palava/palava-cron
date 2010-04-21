@@ -20,61 +20,28 @@
 
 package de.cosmocode.palava.cron;
 
-import com.google.common.base.Preconditions;
-import com.google.inject.Key;
-import com.google.inject.Provider;
-
 /**
- * 
+ * A trigger binding is a simple value object
+ * keeping track of a {@link Runnable} and a cron
+ * expression. Using both values to configure
+ * a scheduling is left to implementations.
  *
  * @author Willi Schoenborn
  */
-interface TriggerBinding {
+public interface TriggerBinding {
 
-    Runnable getRunnable();
+    /**
+     * Provides the command assocatiated with this binding.
+     * 
+     * @return the {@link Runnable}
+     */
+    Runnable getCommand();
     
+    /**
+     * Provides the cron expression associated with this binding.
+     * 
+     * @return the expression
+     */
     String getExpression();
-    
-    public static final class Builder {
-        
-        private final Provider<? extends Runnable> runnable;
-
-        public Builder(Provider<? extends Runnable> runnable) {
-            this.runnable = Preconditions.checkNotNull(runnable, "Runnable");
-        }
-
-        public TriggerBinding withExpression(final String expression) {
-            return new TriggerBinding() {
-                
-                @Override
-                public Runnable getRunnable() {
-                    return runnable.get();
-                }
-                
-                @Override
-                public String getExpression() {
-                    return expression;
-                }
-                
-            };
-        }
-        
-        public TriggerBinding withExpression(final Provider<? extends String> expression) {
-            return new TriggerBinding() {
-                
-                @Override
-                public Runnable getRunnable() {
-                    return runnable.get();
-                }
-                
-                @Override
-                public String getExpression() {
-                    return expression.get();
-                }
-                
-            };
-        }
-        
-    }
     
 }

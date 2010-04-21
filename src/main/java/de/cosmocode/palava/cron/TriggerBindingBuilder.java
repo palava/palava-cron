@@ -22,12 +22,36 @@ package de.cosmocode.palava.cron;
 
 import java.lang.annotation.Annotation;
 
+/**
+ * A builder which is part of the EDSL provided
+ * by the {@link CronModule}.
+ *
+ * @author Willi Schoenborn
+ */
 public interface TriggerBindingBuilder {
 
+    /**
+     * Schedules the configured binding target using the specified
+     * cron expression.
+     * 
+     * @param expression the cron expression
+     */
     void using(String expression);
-    
+
+    /**
+     * Schedules the configured binding target using the cron expression
+     * bound with the specified annotation.
+     * 
+     * @param annotation the binding annotation for the cron expression
+     */
     void using(Annotation annotation);
-    
+
+    /**
+     * Schedules the configured binding target using the cron expression
+     * bound with the specified annotation type.
+     * 
+     * @param annotationType the binding annotation type for the cron expression
+     */
     void using(Class<? extends Annotation> annotationType);
     
 }

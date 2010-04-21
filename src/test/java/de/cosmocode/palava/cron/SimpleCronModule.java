@@ -25,7 +25,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 
 /**
- * 
+ * Simple dummy implementation of the {@link CronModule} to verify code beautiness ;).
  *
  * @author Willi Schoenborn
  */
