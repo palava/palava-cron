@@ -22,6 +22,11 @@
   		<artifactId>palava-core</artifactId>
   		<version>[2.3-SNAPSHOT,3)</version>
   	</dependency>
+    <dependency>
+        <groupId>de.cosmocode</groupId>
+        <artifactId>cosmocode-commons</artifactId>
+        <version>[1.5-SNAPSHOT,2)</version>
+    </dependency>
   	<dependency>
   		<groupId>org.quartz-scheduler</groupId>
   		<artifactId>quartz</artifactId>
@@ -32,5 +37,21 @@
   		<artifactId>guice-multibindings</artifactId>
   		<version>2.0</version>
   	</dependency>
+    <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.easymock</groupId>
+        <artifactId>easymock</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>de.cosmocode</groupId>
+        <artifactId>log4j-config</artifactId>
+        <version>[1.1,2)</version>
+        <scope>test</scope>
+    </dependency>
   </dependencies>
 </project>

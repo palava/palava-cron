@@ -20,9 +20,13 @@
 
 package de.cosmocode.palava.cron;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -33,6 +37,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 
+import de.cosmocode.commons.Stateful;
+import de.cosmocode.commons.concurrent.TimeUnits;
 import de.cosmocode.palava.core.lifecycle.Initializable;
 import de.cosmocode.palava.core.lifecycle.LifecycleException;
 
@@ -42,7 +48,7 @@ import de.cosmocode.palava.core.lifecycle.LifecycleException;
  *
  * @author Willi Schoenborn
  */
-final class CronService implements Initializable {
+final class CronService implements Initializable, UncaughtExceptionHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(CronService.class);
 
@@ -50,10 +56,17 @@ final class CronService implements Initializable {
     
     private final Set<TriggerBinding> bindings;
     
+    private UncaughtExceptionHandler handler = this;
+    
     @Inject
     public CronService(@Cron ScheduledExecutorService scheduler, Set<TriggerBinding> bindings) {
         this.scheduler = Preconditions.checkNotNull(scheduler, "Scheduler");
         this.bindings = Preconditions.checkNotNull(bindings, "Bindings");
+    }
+    
+    @Inject(optional = true)
+    void setHandler(@Cron UncaughtExceptionHandler handler) {
+        this.handler = Preconditions.checkNotNull(handler, "Handler");
     }
 
     @Override
@@ -74,17 +87,62 @@ final class CronService implements Initializable {
             final Runnable command = new ReschedulingRunnable(runnable, cronExpression);
             final long delay = computeDelay(cronExpression);
             
-            scheduler.schedule(command, delay, TimeUnit.MILLISECONDS);
+            if (delay == -1) {
+                LOG.info("Cron expression '{}' for {} is not satisfied", expression, runnable);
+            } else {
+                final TimeUnit human = TimeUnits.forMortals(delay, TimeUnit.MILLISECONDS);
+                LOG.info("Scheduling {} to run in {} {}", new Object[] {
+                    runnable, human.convert(delay, TimeUnit.MILLISECONDS), human.name().toLowerCase()
+                });
+                schedule(command, delay);
+            }
         }
     }
     
+    @Override
+    public void uncaughtException(Thread t, Throwable e) {
+        LOG.error("Uncaught exception in " + t, e);
+    }
+    
+    private void schedule(Runnable command, long delay) {
+        final Future<?> future = scheduler.schedule(command, delay, TimeUnit.MILLISECONDS);
+        
+        scheduler.execute(new Runnable() {
+            
+            @Override
+            public void run() {
+                LOG.debug("Starting watcher thread");
+                try {
+                    future.get();
+                    // dead code here?
+                } catch (InterruptedException e) {
+                    LOG.error("Scheduler was interrupted", e);
+                } catch (CancellationException e) {
+                    LOG.info("Watcher thread has been cancelled");
+                } catch (ExecutionException e) {
+                    handler.uncaughtException(Thread.currentThread(), e.getCause());
+                }
+                LOG.debug("Watcher thread terminated");
+            }
+            
+        });
+    }
+
     private long computeDelay(CronExpression expression) {
         return computeDelay(expression, new Date());
     }
     
+    /**
+     * Computes the delay for the next execution in milliseconds.
+     * 
+     * @param expression the cron expression
+     * @param after the date after which the next run should happen
+     * @return the computed delay or -1 if now date after the specified one
+     *         satisifies the given cron expression
+     */
     private long computeDelay(CronExpression expression, Date after) {
         final Date start = expression.getNextValidTimeAfter(after);
-        return start.getTime() - System.currentTimeMillis(); 
+        return start == null ? -1 : start.getTime() - System.currentTimeMillis(); 
     }
     
     /**
@@ -110,16 +168,39 @@ final class CronService implements Initializable {
         public void run() {
             startedAt = new Date();
             try {
-                runnable.run();
+                if (isInRunningState()) {
+                    LOG.trace("Performing scheduled execution of {}", runnable);
+                    runnable.run();
+                } else {
+                    LOG.info("{} is currently not in running mode, skipping execution.", runnable);
+                }
             } finally {
                 reschedule();
             }
         }
         
+        private boolean isInRunningState() {
+            if (runnable instanceof Stateful) {
+                return Stateful.class.cast(runnable).isRunning();
+            } else {
+                return true;
+            }
+        }
+        
         private void reschedule() {
             assert startedAt != null : "Expected Start date to be set";
+            LOG.debug("Rescheduling {}", runnable);
             final long delay = computeDelay(expression, startedAt);
-            scheduler.schedule(this, delay, TimeUnit.MILLISECONDS);
+
+            if (delay == -1) {
+                LOG.info("Cron expression '{}' for {} is not longer satisfied", expression, runnable);
+            } else {
+                final TimeUnit human = TimeUnits.forMortals(delay, TimeUnit.MILLISECONDS);
+                LOG.info("Scheduling {} to run again in {} {}", new Object[] {
+                    runnable, human.convert(delay, TimeUnit.MILLISECONDS), human.name().toLowerCase()
+                });
+                schedule(this, delay);
+            }
         }
         
     }
