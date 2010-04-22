@@ -179,6 +179,7 @@ final class CronService implements Initializable, UncaughtExceptionHandler {
             }
         }
         
+        // TODO should this really be here? @Magic?
         private boolean isInRunningState() {
             if (runnable instanceof Stateful) {
                 return Stateful.class.cast(runnable).isRunning();
