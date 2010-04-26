@@ -16,6 +16,8 @@
 
 package de.cosmocode.palava.cron;
 
+import org.quartz.CronExpression;
+
 /**
  * A trigger binding is a simple value object
  * keeping track of a {@link Runnable} and a cron
@@ -38,6 +40,6 @@ public interface TriggerBinding {
      * 
      * @return the expression
      */
-    String getExpression();
+    CronExpression getExpression();
     
 }

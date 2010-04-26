@@ -16,6 +16,8 @@
 
 package de.cosmocode.palava.cron;
 
+import org.quartz.CronExpression;
+
 import com.google.inject.Provider;
 
 /**
@@ -30,7 +32,7 @@ final class TriggerBindings {
     }
 
     /**
-     * Constructs a new {@link TriggerBinding} using the specified providers.
+     * Creates a new {@link TriggerBinding} using the specified providers.
      * 
      * @param command the provider for the command
      * @param expression the provider for the cron expression
@@ -38,7 +40,7 @@ final class TriggerBindings {
      *         when requested
      */
     public static TriggerBinding of(final Provider<? extends Runnable> command, 
-        final Provider<? extends String> expression) {
+        final Provider<? extends CronExpression> expression) {
         return new TriggerBinding() {
             
             public Runnable getCommand() {
@@ -46,7 +48,7 @@ final class TriggerBindings {
             };
             
             @Override
-            public String getExpression() {
+            public CronExpression getExpression() {
                 return expression.get();
             }
             
@@ -54,7 +56,7 @@ final class TriggerBindings {
     }
     
     /**
-     * Constructs a new {@link TriggerBinding} using the specified provider and
+     * Creates a new {@link TriggerBinding} using the specified provider and
      * cron expression.
      * 
      * @param command the provider for the command
@@ -71,7 +73,31 @@ final class TriggerBindings {
             }
             
             @Override
-            public String getExpression() {
+            public CronExpression getExpression() {
+                return CronExpressionConverter.INSTANCE.convert(expression);
+            }
+            
+        };
+    }
+    
+    /**
+     * Creates a new {@link TriggerBinding} using the specified provider and cron expression.
+     * 
+     * @param command the provider for the command
+     * @param expression the cron expression
+     * @return a {@link TriggerBinding} which delegates to the specified provider
+     *         when requested
+     */
+    public static TriggerBinding of(final Provider<? extends Runnable> command, final CronExpression expression) {
+        return new TriggerBinding() {
+            
+            @Override
+            public Runnable getCommand() {
+                return command.get();
+            }
+            
+            @Override
+            public CronExpression getExpression() {
                 return expression;
             }
             

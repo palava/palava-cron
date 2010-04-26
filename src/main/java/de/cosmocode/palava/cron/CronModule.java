@@ -18,6 +18,8 @@ package de.cosmocode.palava.cron;
 
 import java.lang.annotation.Annotation;
 
+import org.quartz.CronExpression;
+
 import com.google.common.base.Preconditions;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
@@ -94,17 +96,17 @@ public abstract class CronModule extends AbstractModule {
         
         @Override
         public void using(Annotation annotation) {
-            using(Key.get(String.class, annotation));
+            using(Key.get(CronExpression.class, annotation));
         }
         
         @Override
         public void using(Class<? extends Annotation> annotationType) {
-            using(Key.get(String.class, annotationType));
+            using(Key.get(CronExpression.class, annotationType));
         }
         
-        private void using(Key<? extends String> expressionKey) {
+        private void using(Key<? extends CronExpression> expressionKey) {
             final Provider<? extends Runnable> command = binder().getProvider(commandKey);
-            final Provider<? extends String> expression = binder().getProvider(expressionKey);
+            final Provider<? extends CronExpression> expression = binder().getProvider(expressionKey);
             final TriggerBinding binding = TriggerBindings.of(command, expression);
             bind(binding);
         }

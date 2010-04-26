@@ -14,8 +14,8 @@
   </scm>
   <dependencies>
     <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
       <groupId>de.cosmocode.palava</groupId>
@@ -23,9 +23,14 @@
       <version>[2.3-SNAPSHOT,3)</version>
     </dependency>
     <dependency>
-        <groupId>de.cosmocode</groupId>
-        <artifactId>cosmocode-commons</artifactId>
-        <version>[1.5-SNAPSHOT,2)</version>
+      <groupId>de.cosmocode.palava</groupId>
+      <artifactId>palava-concurrent</artifactId>
+      <version>[2.2-SNAPSHOT,3)</version>
+    </dependency>
+    <dependency>
+      <groupId>de.cosmocode</groupId>
+      <artifactId>cosmocode-commons</artifactId>
+      <version>[1.5-SNAPSHOT,2)</version>
     </dependency>
     <dependency>
       <groupId>org.quartz-scheduler</groupId>
@@ -38,20 +43,26 @@
       <version>2.0</version>
     </dependency>
     <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <scope>test</scope>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
-        <groupId>org.easymock</groupId>
-        <artifactId>easymock</artifactId>
-        <scope>test</scope>
+      <groupId>de.cosmocode</groupId>
+      <artifactId>cosmocode-junit</artifactId>
+      <version>1.4-SNAPSHOT</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
-        <groupId>de.cosmocode</groupId>
-        <artifactId>log4j-config</artifactId>
-        <version>[1.1,2)</version>
-        <scope>test</scope>
+      <groupId>org.easymock</groupId>
+      <artifactId>easymock</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>de.cosmocode</groupId>
+      <artifactId>log4j-config</artifactId>
+      <version>[1.1,2)</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>

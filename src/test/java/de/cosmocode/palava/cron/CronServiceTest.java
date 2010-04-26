@@ -16,6 +16,7 @@
 
 package de.cosmocode.palava.cron;
 
+import java.text.ParseException;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -26,12 +27,12 @@ import java.util.concurrent.TimeUnit;
 import org.easymock.EasyMock;
 import org.junit.Assert;
 import org.junit.Test;
+import org.quartz.CronExpression;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.internal.Sets;
 
-import de.cosmocode.commons.State;
-import de.cosmocode.commons.Stateful;
+import de.cosmocode.Holder;
 
 /**
  * Tests {@link CronService}.
@@ -40,17 +41,6 @@ import de.cosmocode.commons.Stateful;
  */
 public final class CronServiceTest {
 
-    /**
-     * A runtime execption indicating a success ;).
-     *
-     * @author Willi Schoenborn
-     */
-    private static final class Success extends RuntimeException {
-
-        private static final long serialVersionUID = 8246542271989524124L;
-        
-    }
-    
     private CronService unit(Set<TriggerBinding> bindings) {
         return unit(Executors.newSingleThreadScheduledExecutor(), bindings);
     }
@@ -70,16 +60,19 @@ public final class CronServiceTest {
     
     /**
      * Tests {@link CronService#initialize()} with one binding.
+     * 
+     * @throws ParseException should not happen 
      */
-    @Test(expected = Success.class)
-    public void singleBinding() {
+    @Test
+    public void singleBinding() throws ParseException {
         final TriggerBinding binding = EasyMock.createMock("binding", TriggerBinding.class);
-        EasyMock.expect(binding.getExpression()).andReturn("0/5 * * * * ?");
+        EasyMock.expect(binding.getExpression()).andReturn(new CronExpression("0/5 * * * * ?"));
+        final Holder<Boolean> holder = Holder.of(Boolean.FALSE);
         EasyMock.expect(binding.getCommand()).andReturn(new Runnable() {
             
             @Override
             public void run() {
-                throw new Success();
+                holder.set(Boolean.TRUE);
             }   
             
         });
@@ -99,80 +92,7 @@ public final class CronServiceTest {
                 } catch (InterruptedException e) {
                     throw new AssertionError(e);
                 } catch (ExecutionException e) {
-                    Assert.assertTrue(e.getCause() instanceof Success);
-                    throw Success.class.cast(e.getCause());
-                }
-                return future;
-            }
-            
-            @Override
-            public void execute(Runnable command) {
-                scheduler.execute(command);
-            }
-            
-        };
-        
-        EasyMock.replay(binding);
-        
-        final Set<TriggerBinding> bindings = ImmutableSet.of(binding);
-        
-        try {
-            unit(scheduler, bindings).initialize();
-        } finally {
-            EasyMock.verify(binding);
-        }
-    }
-    
-    /**
-     * A {@link Stateful} {@link Runnable} which never leaves {@link State#TERMINATED}.
-     *
-     * @author Willi Schoenborn
-     */
-    private static final class SuspendedRunnable implements Runnable, Stateful {
-
-        @Override
-        public State currentState() {
-            return State.TERMINATED;
-        }
-
-        @Override
-        public boolean isRunning() {
-            return false;
-        }
-
-        @Override
-        public void run() {
-            Assert.fail();
-        }
-        
-    }
-    
-    /**
-     * Tests {@link CronService#initialize()} with a suspended {@link Runnable}.
-     */
-    @Test
-    public void suspended() {
-        final TriggerBinding binding = EasyMock.createMock("binding", TriggerBinding.class);
-        EasyMock.expect(binding.getExpression()).andReturn("0/5 * * * * ?");
-        EasyMock.expect(binding.getCommand()).andReturn(new SuspendedRunnable());
-        
-        final ScheduledExecutorService scheduler = new MockScheduledExecutorService() {
-            
-            private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-            
-            private int runs;
-            
-            @Override
-            public ScheduledFuture<?> schedule(Runnable runnable, long delay, TimeUnit unit) {
-                if (runs++ == 1) return null;
-                final ScheduledFuture<?> future = scheduler.schedule(runnable, delay, unit);
-                try {
-                    future.get();
-                } catch (InterruptedException e) {
                     throw new AssertionError(e);
-                } catch (ExecutionException e) {
-                    Assert.assertTrue(e.getCause() instanceof Success);
-                    throw Success.class.cast(e.getCause());
                 }
                 return future;
             }
@@ -192,7 +112,8 @@ public final class CronServiceTest {
             unit(scheduler, bindings).initialize();
         } finally {
             EasyMock.verify(binding);
+            Assert.assertTrue(holder.get());
         }
     }
-
+    
 }

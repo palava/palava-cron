@@ -16,28 +16,24 @@
 
 package de.cosmocode.palava.cron;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.util.concurrent.ScheduledExecutorService;
 
-import com.google.inject.BindingAnnotation;
+import com.google.inject.Binder;
+import com.google.inject.Module;
+
+import de.cosmocode.palava.concurrent.SchedulerModule;
 
 /**
- * {@link BindingAnnotation} which identifies the *cron*
- * {@link ScheduledExecutorService}.
+ * Installs the {@link Cron} annotated {@link ScheduledExecutorService} using the
+ * scheduler name {@code cron}.
  *
  * @author Willi Schoenborn
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({
-    ElementType.METHOD,
-    ElementType.PARAMETER
-})
-@BindingAnnotation
-public @interface Cron {
+public final class CronSchedulerModule implements Module {
 
-    String NAME = "cron";
-    
+    @Override
+    public void configure(Binder binder) {
+        binder.install(new SchedulerModule(Cron.class, Cron.NAME));
+    }
+
 }

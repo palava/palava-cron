@@ -17,7 +17,6 @@
 package de.cosmocode.palava.cron;
 
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.text.ParseException;
 import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
@@ -33,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 
-import de.cosmocode.commons.Stateful;
 import de.cosmocode.commons.concurrent.TimeUnits;
 import de.cosmocode.palava.core.lifecycle.Initializable;
 import de.cosmocode.palava.core.lifecycle.LifecycleException;
@@ -71,25 +69,21 @@ final class CronService implements Initializable, UncaughtExceptionHandler {
         
         for (TriggerBinding binding : bindings) {
             final Runnable runnable = binding.getCommand();
-            final String expression = binding.getExpression();
-            final CronExpression cronExpression;
+            final CronExpression expression = binding.getExpression();
             
-            try {
-                cronExpression = new CronExpression(expression);
-            } catch (ParseException e) {
-                throw new LifecycleException(e);
-            }
-            
-            final Runnable command = new ReschedulingRunnable(runnable, cronExpression);
-            final long delay = computeDelay(cronExpression);
+            final Runnable command = new ReschedulingRunnable(runnable, expression);
+            final long delay = computeDelay(expression);
             
             if (delay == -1) {
                 LOG.info("Cron expression '{}' for {} is not satisfied", expression, runnable);
             } else {
-                final TimeUnit human = TimeUnits.forMortals(delay, TimeUnit.MILLISECONDS);
-                LOG.info("Scheduling {} to run in {} {}", new Object[] {
-                    runnable, human.convert(delay, TimeUnit.MILLISECONDS), human.name().toLowerCase()
-                });
+                // may save some time here
+                if (LOG.isInfoEnabled()) {
+                    final TimeUnit human = TimeUnits.forMortals(delay, TimeUnit.MILLISECONDS);
+                    LOG.info("Scheduling {} to run in {} {}", new Object[] {
+                        runnable, human.convert(delay, TimeUnit.MILLISECONDS), human.name().toLowerCase()
+                    });
+                }
                 schedule(command, delay);
             }
         }
@@ -164,23 +158,16 @@ final class CronService implements Initializable, UncaughtExceptionHandler {
         public void run() {
             startedAt = new Date();
             try {
-                if (isInRunningState()) {
-                    LOG.trace("Performing scheduled execution of {}", runnable);
+                LOG.trace("Performing scheduled execution of {}", runnable);
+                try {
                     runnable.run();
-                } else {
-                    LOG.info("{} is currently not in running mode, skipping execution.", runnable);
+                /* CHECKSTYLE:OFF */
+                } catch (RuntimeException e) {
+                /* CHECKSTYLE:ON */
+                    handler.uncaughtException(Thread.currentThread(), e);
                 }
             } finally {
                 reschedule();
-            }
-        }
-        
-        // TODO should this really be here? @Magic?
-        private boolean isInRunningState() {
-            if (runnable instanceof Stateful) {
-                return Stateful.class.cast(runnable).isRunning();
-            } else {
-                return true;
             }
         }
         
@@ -192,10 +179,13 @@ final class CronService implements Initializable, UncaughtExceptionHandler {
             if (delay == -1) {
                 LOG.info("Cron expression '{}' for {} is not longer satisfied", expression, runnable);
             } else {
-                final TimeUnit human = TimeUnits.forMortals(delay, TimeUnit.MILLISECONDS);
-                LOG.info("Scheduling {} to run again in {} {}", new Object[] {
-                    runnable, human.convert(delay, TimeUnit.MILLISECONDS), human.name().toLowerCase()
-                });
+                // may save some time here
+                if (LOG.isInfoEnabled()) {
+                    final TimeUnit human = TimeUnits.forMortals(delay, TimeUnit.MILLISECONDS);
+                    LOG.info("Scheduling {} to run again in {} {}", new Object[] {
+                        runnable, human.convert(delay, TimeUnit.MILLISECONDS), human.name().toLowerCase()
+                    });
+                }
                 schedule(this, delay);
             }
         }

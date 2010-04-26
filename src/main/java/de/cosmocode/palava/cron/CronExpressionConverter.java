@@ -31,6 +31,8 @@ import de.cosmocode.palava.core.inject.AbstractTypeConverter;
  */
 public final class CronExpressionConverter extends AbstractTypeConverter<CronExpression> {
 
+    static final CronExpressionConverter INSTANCE = new CronExpressionConverter(); 
+    
     @Override
     public CronExpression convert(String value) {
         try {
