@@ -31,6 +31,7 @@ public interface AnnotatedTriggerBindingBuilder extends TriggerBindingBuilder {
      * 
      * @param annotation the binding annotation
      * @return a builder which is used to configure the cron expression
+     * @throws NullPointerException if annotation is null
      */
     TriggerBindingBuilder annotatedWith(Annotation annotation);
 
@@ -39,6 +40,7 @@ public interface AnnotatedTriggerBindingBuilder extends TriggerBindingBuilder {
      * 
      * @param annotationType the binding annotation type
      * @return a builder which is used to configure the cron expression
+     * @throws NullPointerException if annotationType is null
      */
     TriggerBindingBuilder annotatedWith(Class<? extends Annotation> annotationType);
     

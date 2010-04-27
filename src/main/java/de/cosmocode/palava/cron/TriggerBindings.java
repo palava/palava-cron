@@ -18,6 +18,7 @@ package de.cosmocode.palava.cron;
 
 import org.quartz.CronExpression;
 
+import com.google.common.base.Preconditions;
 import com.google.inject.Provider;
 
 /**
@@ -38,9 +39,12 @@ final class TriggerBindings {
      * @param expression the provider for the cron expression
      * @return a {@link TriggerBinding} which delegates to the specified provides
      *         when requested
+     * @throws NullPointerException if command or expression is null
      */
     public static TriggerBinding of(final Provider<? extends Runnable> command, 
         final Provider<? extends CronExpression> expression) {
+        Preconditions.checkNotNull(command, "Command");
+        Preconditions.checkNotNull(expression, "Expression");        
         return new TriggerBinding() {
             
             public Runnable getCommand() {
@@ -63,8 +67,11 @@ final class TriggerBindings {
      * @param expression the cron expression
      * @return a {@link TriggerBinding} which delegates to the specified provider
      *         when requested
+     * @throws NullPointerException if command or expression is null
      */
     public static TriggerBinding of(final Provider<? extends Runnable> command, final String expression) {
+        Preconditions.checkNotNull(command, "Command");
+        Preconditions.checkNotNull(expression, "Expression");
         return new TriggerBinding() {
             
             @Override
@@ -87,8 +94,11 @@ final class TriggerBindings {
      * @param expression the cron expression
      * @return a {@link TriggerBinding} which delegates to the specified provider
      *         when requested
+     * @throws NullPointerException if command or expression is null
      */
     public static TriggerBinding of(final Provider<? extends Runnable> command, final CronExpression expression) {
+        Preconditions.checkNotNull(command, "Command");
+        Preconditions.checkNotNull(expression, "Expression");
         return new TriggerBinding() {
             
             @Override

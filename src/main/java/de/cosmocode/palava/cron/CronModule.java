@@ -41,6 +41,7 @@ public abstract class CronModule extends AbstractModule {
      * @return a binding builder used to configure the cron expression
      */
     protected final AnnotatedTriggerBindingBuilder schedule(Class<? extends Runnable> type) {
+        Preconditions.checkNotNull(type, "Type");
         return new InternalBuilder(Key.get(type));
     }
 
@@ -51,6 +52,7 @@ public abstract class CronModule extends AbstractModule {
      * @return a binding builder used to configure the cron expression
      */
     protected final AnnotatedTriggerBindingBuilder schedule(TypeLiteral<? extends Runnable> literal) {
+        Preconditions.checkNotNull(literal, "Literal");
         return new InternalBuilder(Key.get(literal));
     }
 
@@ -61,6 +63,7 @@ public abstract class CronModule extends AbstractModule {
      * @return a binding builder used to configure the cron expression
      */
     protected final TriggerBindingBuilder schedule(Key<? extends Runnable> key) {
+        Preconditions.checkNotNull(key, "Key");
         return new InternalBuilder(key);
     }
     
@@ -79,34 +82,40 @@ public abstract class CronModule extends AbstractModule {
         
         @Override
         public TriggerBindingBuilder annotatedWith(Annotation annotation) {
+            Preconditions.checkNotNull(annotation, "Annotation");
             return schedule(Key.get(commandKey.getTypeLiteral(), annotation));
         }
         
         @Override
         public TriggerBindingBuilder annotatedWith(Class<? extends Annotation> annotationType) {
+            Preconditions.checkNotNull(annotationType, "AnnotationType");
             return schedule(Key.get(commandKey.getTypeLiteral(), annotationType));
         }
         
         @Override
         public void using(String expression) {
-            final Provider<? extends Runnable> provider = binder().getProvider(commandKey);
+            Preconditions.checkNotNull(expression, "Expression");
+            Preconditions.checkArgument(CronExpression.isValidExpression(expression), "%s is not valid", expression);
+            final Provider<? extends Runnable> provider = getProvider(commandKey);
             final TriggerBinding binding = TriggerBindings.of(provider, expression);
             bind(binding);
         }
         
         @Override
         public void using(Annotation annotation) {
+            Preconditions.checkNotNull(annotation, "Annotation");
             using(Key.get(CronExpression.class, annotation));
         }
         
         @Override
         public void using(Class<? extends Annotation> annotationType) {
+            Preconditions.checkNotNull(annotationType, "AnnotationType");
             using(Key.get(CronExpression.class, annotationType));
         }
         
         private void using(Key<? extends CronExpression> expressionKey) {
-            final Provider<? extends Runnable> command = binder().getProvider(commandKey);
-            final Provider<? extends CronExpression> expression = binder().getProvider(expressionKey);
+            final Provider<? extends Runnable> command = getProvider(commandKey);
+            final Provider<? extends CronExpression> expression = getProvider(expressionKey);
             final TriggerBinding binding = TriggerBindings.of(command, expression);
             bind(binding);
         }

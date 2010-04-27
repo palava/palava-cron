@@ -31,6 +31,7 @@ public interface TriggerBindingBuilder {
      * cron expression.
      * 
      * @param expression the cron expression
+     * @throws NullPointerException if expression is null
      */
     void using(String expression);
 
@@ -39,6 +40,7 @@ public interface TriggerBindingBuilder {
      * bound with the specified annotation.
      * 
      * @param annotation the binding annotation for the cron expression
+     * @throws NullPointerException if annotation is null
      */
     void using(Annotation annotation);
 
@@ -47,6 +49,7 @@ public interface TriggerBindingBuilder {
      * bound with the specified annotation type.
      * 
      * @param annotationType the binding annotation type for the cron expression
+     * @throws NullPointerException if annotationType is null
      */
     void using(Class<? extends Annotation> annotationType);
     
