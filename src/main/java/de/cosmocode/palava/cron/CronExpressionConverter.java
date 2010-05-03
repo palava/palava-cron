@@ -34,7 +34,7 @@ public final class CronExpressionConverter extends AbstractTypeConverter<CronExp
     static final CronExpressionConverter INSTANCE = new CronExpressionConverter(); 
     
     @Override
-    public CronExpression convert(String value) {
+    protected CronExpression convert(String value) {
         try {
             return new CronExpression(value);
         } catch (ParseException e) {
