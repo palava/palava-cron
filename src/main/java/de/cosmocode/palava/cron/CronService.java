@@ -172,21 +172,25 @@ final class CronService implements Initializable, UncaughtExceptionHandler {
         }
         
         private void reschedule() {
-            assert startedAt != null : "Expected Start date to be set";
-            LOG.debug("Rescheduling {}", runnable);
-            final long delay = computeDelay(expression, startedAt);
-
-            if (delay == -1) {
-                LOG.info("Cron expression '{}' for {} is not longer satisfied", expression, runnable);
+            if (scheduler.isShutdown()) {
+                LOG.info("Suppressing {} from beind re-scheduled", runnable);
             } else {
-                // may save some time here
-                if (LOG.isInfoEnabled()) {
-                    final TimeUnit human = TimeUnits.forMortals(delay, TimeUnit.MILLISECONDS);
-                    LOG.info("Scheduling {} to run again in {} {}", new Object[] {
-                        runnable, human.convert(delay, TimeUnit.MILLISECONDS), human.name().toLowerCase()
-                    });
+                assert startedAt != null : "Expected Start date to be set";
+                LOG.debug("Rescheduling {}", runnable);
+                final long delay = computeDelay(expression, startedAt);
+                
+                if (delay == -1) {
+                    LOG.info("Cron expression '{}' for {} is not longer satisfied", expression, runnable);
+                } else {
+                    // may save some time here
+                    if (LOG.isInfoEnabled()) {
+                        final TimeUnit human = TimeUnits.forMortals(delay, TimeUnit.MILLISECONDS);
+                        LOG.info("Scheduling {} to run again in {} {}", new Object[] {
+                            runnable, human.convert(delay, TimeUnit.MILLISECONDS), human.name().toLowerCase()
+                        });
+                    }
+                    schedule(this, delay);
                 }
-                schedule(this, delay);
             }
         }
         
