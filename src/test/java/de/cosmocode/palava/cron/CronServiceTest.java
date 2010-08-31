@@ -18,11 +18,8 @@ package de.cosmocode.palava.cron;
 
 import java.text.ParseException;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.easymock.EasyMock;
 import org.junit.Assert;
@@ -77,32 +74,7 @@ public final class CronServiceTest {
             
         });
         
-        final ScheduledExecutorService scheduler = new MockScheduledExecutorService() {
-            
-            private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-            
-            private int runs;
-            
-            @Override
-            public ScheduledFuture<?> schedule(Runnable runnable, long delay, TimeUnit unit) {
-                if (runs++ == 1) return null;
-                final ScheduledFuture<?> future = scheduler.schedule(runnable, delay, unit);
-                try {
-                    future.get();
-                } catch (InterruptedException e) {
-                    throw new AssertionError(e);
-                } catch (ExecutionException e) {
-                    throw new AssertionError(e);
-                }
-                return future;
-            }
-            
-            @Override
-            public void execute(Runnable command) {
-                scheduler.execute(command);
-            }
-            
-        };
+        final ScheduledExecutorService scheduler = new MockScheduledExecutorService();
         
         EasyMock.replay(binding);
         
