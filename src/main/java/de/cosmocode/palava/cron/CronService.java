@@ -19,9 +19,6 @@ package de.cosmocode.palava.cron;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Date;
 import java.util.Set;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -95,27 +92,7 @@ final class CronService implements Initializable, UncaughtExceptionHandler {
     }
     
     private void schedule(Runnable command, long delay) {
-        final Future<?> future = scheduler.schedule(command, delay, TimeUnit.MILLISECONDS);
-        
-        scheduler.execute(new Runnable() {
-            
-            @Override
-            public void run() {
-                LOG.debug("Starting watcher thread");
-                try {
-                    future.get();
-                    // dead code here?
-                } catch (InterruptedException e) {
-                    LOG.error("Scheduler was interrupted", e);
-                } catch (CancellationException e) {
-                    LOG.info("Watcher thread has been cancelled");
-                } catch (ExecutionException e) {
-                    handler.uncaughtException(Thread.currentThread(), e.getCause());
-                }
-                LOG.debug("Watcher thread terminated");
-            }
-            
-        });
+        scheduler.schedule(command, delay, TimeUnit.MILLISECONDS);
     }
 
     private long computeDelay(CronExpression expression) {
