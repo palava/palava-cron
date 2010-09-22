@@ -59,11 +59,12 @@ public final class CronServiceTest {
      * Tests {@link CronService#initialize()} with one binding.
      * 
      * @throws ParseException should not happen 
+     * @throws InterruptedException should not happen
      */
     @Test
-    public void singleBinding() throws ParseException {
+    public void singleBinding() throws ParseException, InterruptedException {
         final TriggerBinding binding = EasyMock.createMock("binding", TriggerBinding.class);
-        EasyMock.expect(binding.getExpression()).andReturn(new CronExpression("0/5 * * * * ?"));
+        EasyMock.expect(binding.getExpression()).andReturn(new CronExpression("0/1 * * * * ?"));
         final Holder<Boolean> holder = Holder.of(Boolean.FALSE);
         EasyMock.expect(binding.getCommand()).andReturn(new Runnable() {
             
@@ -74,18 +75,16 @@ public final class CronServiceTest {
             
         });
         
-        final ScheduledExecutorService scheduler = new MockScheduledExecutorService();
+        final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         
         EasyMock.replay(binding);
         
         final Set<TriggerBinding> bindings = ImmutableSet.of(binding);
         
-        try {
-            unit(scheduler, bindings).initialize();
-        } finally {
-            EasyMock.verify(binding);
-            Assert.assertTrue(holder.get());
-        }
+        unit(scheduler, bindings).initialize();
+        EasyMock.verify(binding);
+        Thread.sleep(1000);
+        Assert.assertTrue(holder.get());
     }
     
 }

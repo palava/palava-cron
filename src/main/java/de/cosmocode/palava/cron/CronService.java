@@ -18,18 +18,29 @@ package de.cosmocode.palava.cron;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.quartz.CronExpression;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Maps;
 import com.google.inject.Inject;
+import com.google.inject.internal.Sets;
+import com.google.inject.name.Named;
 
 import de.cosmocode.commons.concurrent.TimeUnits;
+import de.cosmocode.palava.core.lifecycle.Disposable;
 import de.cosmocode.palava.core.lifecycle.Initializable;
 import de.cosmocode.palava.core.lifecycle.LifecycleException;
 
@@ -39,7 +50,7 @@ import de.cosmocode.palava.core.lifecycle.LifecycleException;
  *
  * @author Willi Schoenborn
  */
-final class CronService implements Initializable, UncaughtExceptionHandler {
+final class CronService implements Initializable, UncaughtExceptionHandler, Disposable {
 
     private static final Logger LOG = LoggerFactory.getLogger(CronService.class);
 
@@ -47,7 +58,15 @@ final class CronService implements Initializable, UncaughtExceptionHandler {
     
     private final Set<TriggerBinding> bindings;
     
+    private boolean dispoed;
+    
+    private final ConcurrentMap<Runnable, Future<?>> futures = Maps.newConcurrentMap();
+    
     private UncaughtExceptionHandler handler = this;
+    
+    private long taskShutdownTimeout = 1;
+    
+    private TimeUnit taskShutdownTimeoutUnit = TimeUnit.MINUTES;
     
     @Inject
     public CronService(@Cron ScheduledExecutorService scheduler, Set<TriggerBinding> bindings) {
@@ -58,6 +77,16 @@ final class CronService implements Initializable, UncaughtExceptionHandler {
     @Inject(optional = true)
     void setHandler(@Cron UncaughtExceptionHandler handler) {
         this.handler = Preconditions.checkNotNull(handler, "Handler");
+    }
+    
+    @Inject(optional = true)
+    void setTaskShutdownTimeout(@Named(CronConfig.TASK_SHUTDOWN_TIMEOUT) long taskShutdownTimeout) {
+        this.taskShutdownTimeout = taskShutdownTimeout;
+    }
+    
+    @Inject(optional = true)
+    void setTaskShutdownTimeoutUnit(@Named(CronConfig.TASK_SHUTDOWN_TIMEOUT_UNIT) TimeUnit taskShutdownTimeoutUnit) {
+        this.taskShutdownTimeoutUnit = Preconditions.checkNotNull(taskShutdownTimeoutUnit, "TaskShutdownTimeoutUnit");
     }
 
     @Override
@@ -92,7 +121,8 @@ final class CronService implements Initializable, UncaughtExceptionHandler {
     }
     
     private void schedule(Runnable command, long delay) {
-        scheduler.schedule(command, delay, TimeUnit.MILLISECONDS);
+        final Future<?> future = scheduler.schedule(command, delay, TimeUnit.MILLISECONDS);
+        futures.put(command, future);
     }
 
     private long computeDelay(CronExpression expression) {
@@ -133,24 +163,31 @@ final class CronService implements Initializable, UncaughtExceptionHandler {
         
         @Override
         public void run() {
-            startedAt = new Date();
-            try {
-                LOG.trace("Performing scheduled execution of {}", runnable);
+            if (isDispoed()) {
+                LOG.debug("Suppressing scheduled execution of {} due to shutdown", runnable);
+            } else {
+                startedAt = new Date();
                 try {
-                    runnable.run();
-                /* CHECKSTYLE:OFF */
-                } catch (RuntimeException e) {
-                /* CHECKSTYLE:ON */
-                    handler.uncaughtException(Thread.currentThread(), e);
+                    LOG.trace("Performing scheduled execution of {}", runnable);
+                    try {
+                        runnable.run();
+                        /* CHECKSTYLE:OFF */
+                    } catch (RuntimeException e) {
+                        /* CHECKSTYLE:ON */
+                        handler.uncaughtException(Thread.currentThread(), e);
+                    }
+                } finally {
+                    futures.remove(this);
+                    reschedule();
                 }
-            } finally {
-                reschedule();
             }
         }
         
         private void reschedule() {
             if (scheduler.isShutdown()) {
-                LOG.info("Suppressing {} from beind re-scheduled", runnable);
+                LOG.debug("Suppressing {} from beind re-scheduled", runnable);
+            } else if (isDispoed()) {
+                LOG.debug("Suppressing re-scheduling of {} due to shutdown", runnable);
             } else {
                 assert startedAt != null : "Expected Start date to be set";
                 LOG.debug("Rescheduling {}", runnable);
@@ -171,6 +208,50 @@ final class CronService implements Initializable, UncaughtExceptionHandler {
             }
         }
         
+    }
+    
+    private boolean isDispoed() {
+        return dispoed;
+    }
+    
+    @Override
+    public void dispose() throws LifecycleException {
+        final Set<Future<?>> running = Sets.newHashSet();
+        for (Future<?> future : futures.values()) {
+            if (future.isDone()) {
+                LOG.trace("No need to dispose {} (is already done", future);
+            } else if (future.cancel(false)) {
+                LOG.debug("Successfully cancelled {}", future);
+            } else {
+                running.add(future);
+            }
+        }
+        
+        final Iterator<Future<?>> iterator = Iterators.cycle(running);
+        
+        // loop until every future is done and removed
+        while (iterator.hasNext()) {
+            final Future<?> future = iterator.next();
+            try {
+                future.get(taskShutdownTimeout, taskShutdownTimeoutUnit);
+                iterator.remove();
+            } catch (InterruptedException e) {
+                LOG.info("Interrupted while waiting for {}", future);
+                iterator.remove();
+            } catch (CancellationException e) {
+                LOG.info("{} has been cancelled during wait", future);
+                iterator.remove();
+            } catch (ExecutionException e) {
+                LOG.error("Execution of " + future + " failed with an exception", e);
+                iterator.remove();
+            } catch (TimeoutException e) {
+                final TimeUnit humanUnit = TimeUnits.forMortals(taskShutdownTimeout, taskShutdownTimeoutUnit);
+                final long human = humanUnit.convert(taskShutdownTimeout, taskShutdownTimeoutUnit);
+                LOG.warn("{} has exceeded the maximum wait limit of {} {}", new Object[] {
+                    future, human, humanUnit.name().toLowerCase()
+                });
+            }
+        }
     }
     
 }
