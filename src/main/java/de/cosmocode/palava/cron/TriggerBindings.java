@@ -28,6 +28,8 @@ import com.google.inject.Provider;
  */
 final class TriggerBindings {
 
+    private static final CronExpressionConverter CONVERTER = new CronExpressionConverter(); 
+    
     private TriggerBindings() {
         
     }
@@ -81,7 +83,7 @@ final class TriggerBindings {
             
             @Override
             public CronExpression getExpression() {
-                return CronExpressionConverter.INSTANCE.convert(expression);
+                return CONVERTER.convert(expression, CronExpressionConverter.LITERAL);
             }
             
         };

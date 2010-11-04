@@ -20,21 +20,20 @@ import java.text.ParseException;
 
 import org.quartz.CronExpression;
 
+import com.google.inject.TypeLiteral;
 import com.google.inject.spi.TypeConverter;
-
-import de.cosmocode.palava.core.inject.AbstractTypeConverter;
 
 /**
  * {@link TypeConverter} for {@link CronExpression}s.
  *
  * @author Willi Schoenborn
  */
-public final class CronExpressionConverter extends AbstractTypeConverter<CronExpression> {
+public final class CronExpressionConverter implements TypeConverter {
 
-    static final CronExpressionConverter INSTANCE = new CronExpressionConverter(); 
+    public static final TypeLiteral<CronExpression> LITERAL = TypeLiteral.get(CronExpression.class);
     
     @Override
-    protected CronExpression convert(String value) {
+    public CronExpression convert(String value, TypeLiteral<?> toType) {
         try {
             return new CronExpression(value);
         } catch (ParseException e) {
