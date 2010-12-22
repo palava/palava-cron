@@ -48,7 +48,8 @@ final class TriggerBindings {
         Preconditions.checkNotNull(command, "Command");
         Preconditions.checkNotNull(expression, "Expression");        
         return new TriggerBinding() {
-            
+
+            @Override
             public Runnable getCommand() {
                 return command.get();
             }
