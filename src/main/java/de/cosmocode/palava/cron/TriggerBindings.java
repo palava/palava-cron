@@ -51,7 +51,7 @@ final class TriggerBindings {
             
             public Runnable getCommand() {
                 return command.get();
-            };
+            }
             
             @Override
             public CronExpression getExpression() {
