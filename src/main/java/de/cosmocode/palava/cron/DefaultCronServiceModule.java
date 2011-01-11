@@ -18,19 +18,19 @@ package de.cosmocode.palava.cron;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.multibindings.Multibinder;
 
 /**
- * Binds the {@link DefaultCronService} as eager singleton.
+ * Binds {@link CronService} to {@link DefaultCronService} as eager singleton.
  *
- * @deprecated use {@link DefaultCronServiceModule}
  * @author Willi Schoenborn
  */
-@Deprecated
-public final class CronServiceModule implements Module {
+public final class DefaultCronServiceModule implements Module {
 
     @Override
     public void configure(Binder binder) {
-        binder.install(new DefaultCronServiceModule());
+        Multibinder.newSetBinder(binder, TriggerBinding.class);
+        binder.bind(CronService.class).to(DefaultCronService.class).asEagerSingleton();
     }
 
 }

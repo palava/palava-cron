@@ -32,22 +32,22 @@ import com.google.inject.internal.Sets;
 import de.cosmocode.Holder;
 
 /**
- * Tests {@link CronService}.
+ * Tests {@link DefaultCronService}.
  *
  * @author Willi Schoenborn
  */
-public final class CronServiceTest {
+public final class DefaultCronServiceTest {
 
-    private CronService unit(Set<TriggerBinding> bindings) {
+    private DefaultCronService unit(Set<TriggerBinding> bindings) {
         return unit(Executors.newSingleThreadScheduledExecutor(), bindings);
     }
     
-    private CronService unit(ScheduledExecutorService scheduler, Set<TriggerBinding> bindings) {
-        return new CronService(scheduler, bindings);
+    private DefaultCronService unit(ScheduledExecutorService scheduler, Set<TriggerBinding> bindings) {
+        return new DefaultCronService(scheduler, bindings);
     }
     
     /**
-     * Tests {@link CronService#initialize()} without configured bindings.
+     * Tests {@link DefaultCronService#initialize()} without configured bindings.
      */
     @Test
     public void noBindings() {
@@ -56,7 +56,7 @@ public final class CronServiceTest {
     }
     
     /**
-     * Tests {@link CronService#initialize()} with one binding.
+     * Tests {@link DefaultCronService#initialize()} with one binding.
      * 
      * @throws ParseException should not happen 
      * @throws InterruptedException should not happen
